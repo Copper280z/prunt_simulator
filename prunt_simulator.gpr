@@ -8,6 +8,10 @@ project Prunt_Simulator is
    for Main use ("prunt_simulator.adb");
    for Languages use ("Ada", "C");
 
+   package Linker is 
+     for Default_Switches ("Ada") use ("-Lzig_impl/zig-out/lib", "-lcallbacks");
+   end Linker;
+
    package Compiler is
       for Default_Switches ("Ada") use
         Prunt_Simulator_Config.Ada_Compiler_Switches &
