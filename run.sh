@@ -1,3 +1,3 @@
-#!/usr/bin/env zsh
+#!/bin/bash
 
-rm tmp.csv && ./bin/prunt_simulator | tee >(grep -v ".*,.*,.*,.*,,,," >> /dev/stdout) | grep ".*,.*,.*,.*,.*,,,,"  > tmp.csv
+rm tmp.csv && ./bin/prunt_simulator | tee >(grep -v ".*,.*,.*,.*,,,," >>/dev/stdout) | grep ".*,.*,.*,.*,.*,,,," >tmp.csv
