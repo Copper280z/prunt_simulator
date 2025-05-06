@@ -11,3 +11,11 @@ void enqueue_command(float x, float y, float z, float e, int index,
     printf("Safe stop after this move\n");
   }
 }
+
+void configure(float interp_time) {
+  printf("Configuring with interp time: %.3f\n", interp_time);
+}
+
+void shutdown() {
+  printf("Shutdown!\n");
+}

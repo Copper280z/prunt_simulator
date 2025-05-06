@@ -21,15 +21,15 @@ This block instructs the compiler to expect the linker will find a C function na
 The second block wraps our C calling convention function in one with the Ada calling convention that Prunt expects. There's one more function happening in there, `StepperToCInt`, which explicitly converts the Ada enum type `Stepper` to the integer that our C function expects with a switch statement. You could also use `Stepper_Name'Pos` but I wanted to be explicit about which axis is which number.
 
 ## Linking Setup
-Alire can actually compile C directly making this part superfluous, but I don't want to be constrained to C, so instead we'll link against a static library. If you do want to have Alire deal with all of this, get rid of the linker section in alire.toml and move the `my_callbacks.c` file into the `src` folder, next to `prunt_simulator.adb`. That should be it.
-We specify which static library to link against in `alire.toml`.
+Alire can actually compile C directly making this part superfluous, but I don't want to be constrained to C, so instead we'll link against a static library. If you do want to have Alire deal with all of this, get rid of the linker section in prunt_simulator.gpr and move the `callbacks.c` file into the `src` folder, next to `prunt_simulator.adb`. That should be it.
+We specify which static library to link against in `prunt_simulator.gpr`.
 
 Here's the entry to use the zig implementation.
 
     package Linker is 
       for Default_Switches ("Ada") use ("-Lzig_impl/zig-out/lib", "-lcallbacks");
     end Linker;
-This syntax is pretty much the same as you'd use with GCC, `-Lblahblah` is the directory the archive is in, `-lblah` is the library to link against (without the lib on the front, so the actual file is `libcallbacks.a`). 
+This syntax is pretty much the same as you'd use with GCC, `-Lblahblah` is the directory the archive is in, `-lblah` is the library to link against (without the lib on the front, so the actual file linked against is `libcallbacks.a`). The entry for the C version is in the file, but commented out. 
 
 # Building
 ## Zig
