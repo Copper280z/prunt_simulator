@@ -30,78 +30,107 @@ with Prunt.Heaters;
 
 procedure Prunt_Simulator is
 
-    package Dimensionless_Text_IO is new Ada.Text_IO.Float_IO (Dimensionless);
+   package Dimensionless_Text_IO is new Ada.Text_IO.Float_IO (Dimensionless);
 
-    type Stepper_Name is new Axis_Name;
+   type Stepper_Name is new Axis_Name;
 
-    type Heater_Name is (Hotend, Bed);
+   type Heater_Name is (Hotend, Bed);
 
-    type Fan_Name is (Fan_1, Fan_2);
+   type Fan_Name is (Fan_1, Fan_2);
 
-    type Board_Temperature_Probe_Name is range 1 .. 0;
+   type Board_Temperature_Probe_Name is range 1 .. 0;
 
-    package My_Controller_Generic_Types is new Prunt.Controller_Generic_Types
-      (Stepper_Name                 => Stepper_Name,
+   package My_Controller_Generic_Types is new
+     Prunt.Controller_Generic_Types
+       (Stepper_Name                 => Stepper_Name,
         Heater_Name                  => Heater_Name,
         Thermistor_Name              => Heater_Name,
         Board_Temperature_Probe_Name => Board_Temperature_Probe_Name,
         Fan_Name                     => Fan_Name,
         Input_Switch_Name            => Stepper_Name);
 
-    use My_Controller_Generic_Types;
+   use My_Controller_Generic_Types;
 
-    procedure Setup
-      (Heater_Thermistors : Heater_Thermistor_Map; Thermistors : Thermistor_Parameters_Array_Type) is null;
-    procedure Reconfigure_Heater (Heater : Heater_Name; Params : Prunt.Heaters.Heater_Parameters) is null;
-    procedure Reconfigure_Fan (Fan : Fan_Name; PWM_Freq : Fan_PWM_Frequency) is null;
-    procedure Autotune_Heater (Heater : Heater_Name; Params : Prunt.Heaters.Heater_Parameters) is null;
-    procedure Setup_For_Loop_Move (Switch : Stepper_Name; Hit_State : Pin_State) is null;
-    procedure Setup_For_Conditional_Move (Switch : Stepper_Name; Hit_State : Pin_State) is null;
-    procedure Reset_Position (Pos : Stepper_Position) is null;
-    procedure Wait_Until_Idle (Last_Command : Command_Index) is null;
-    procedure Shutdown is null;
+   procedure Setup
+     (Heater_Thermistors : Heater_Thermistor_Map;
+      Thermistors        : Thermistor_Parameters_Array_Type)
+   is null;
+   procedure Reconfigure_Heater
+     (Heater : Heater_Name; Params : Prunt.Heaters.Heater_Parameters)
+   is null;
+   procedure Reconfigure_Fan (Fan : Fan_Name; PWM_Freq : Fan_PWM_Frequency)
+   is null;
+   procedure Autotune_Heater
+     (Heater : Heater_Name; Params : Prunt.Heaters.Heater_Parameters)
+   is null;
+   procedure Setup_For_Loop_Move (Switch : Stepper_Name; Hit_State : Pin_State)
+   is null;
+   procedure Setup_For_Conditional_Move
+     (Switch : Stepper_Name; Hit_State : Pin_State)
+   is null;
+   procedure Reset_Position (Pos : Stepper_Position) is null;
+   procedure Wait_Until_Idle (Last_Command : Command_Index) is null;
 
-    procedure Enqueue_Command (Command : Queued_Command);
+   procedure Enqueue_Command (Command : Queued_Command);
 
-
-    function StepperToCInt (Stepper : Stepper_Name) return Integer is
-    begin
+   function StepperToCInt (Stepper : Stepper_Name) return Integer is
+   begin
       case Stepper is
-          when X_Axis => return 0;
-          when Y_Axis => return 1;
-          when Z_Axis => return 2;
-          when E_Axis => return 3;
+         when X_Axis =>
+            return 0;
+
+         when Y_Axis =>
+            return 1;
+
+         when Z_Axis =>
+            return 2;
+
+         when E_Axis =>
+            return 3;
       end case;
-    end StepperToCInt;
+   end StepperToCInt;
 
-    -- Import the C function (not passed directly to Prunt)
-    procedure Enable_Stepper_C (Stepper : Integer);
-    pragma Import (C, Enable_Stepper_C, "enable_stepper");
+   -- Import the C function (not passed directly to Prunt)
+   procedure Enable_Stepper_C (Stepper : Integer);
+   pragma Import (C, Enable_Stepper_C, "enable_stepper");
 
-    procedure Disable_Stepper_C (Stepper : Integer);
-    pragma Import (C, Disable_Stepper_C, "disable_stepper");
+   procedure Disable_Stepper_C (Stepper : Integer);
+   pragma Import (C, Disable_Stepper_C, "disable_stepper");
 
-    -- Ada wrapper with the correct convention and type
-    procedure Enable_Stepper (Stepper : Stepper_Name) is
-    begin
-      Enable_Stepper_C (StepperToCInt(Stepper));
-    end Enable_Stepper;
+   procedure Enqueue_Command_C
+     (X, Y, Z, E : Float; Index : Integer; Safe_Stop : Integer);
+   pragma Import (C, Enqueue_Command_C, "enqueue_command");
 
-    procedure Disable_Stepper (Stepper : Stepper_Name) is
-    begin
-      Disable_Stepper_C (StepperToCInt(Stepper));
-    end Disable_Stepper;
+   procedure Configure_C (Interpolation_Time : Float);
+   pragma Import (C, Configure_C, "configure");
 
-    procedure Enqueue_Command_C
-      (X, Y, Z, E : Float; Index : Integer; Safe_Stop : Integer);
-    pragma Import (C, Enqueue_Command_C, "enqueue_command");
+   procedure Shutdown_C;
+   pragma Import (C, Shutdown_C, "shutdown");
 
+   -- Ada wrapper with the correct convention and type
+   procedure Enable_Stepper (Stepper : Stepper_Name) is
+   begin
+      Enable_Stepper_C (StepperToCInt (Stepper));
+   end Enable_Stepper;
 
-    package My_Controller is new Prunt.Controller
-      (Generic_Types              => My_Controller_Generic_Types,
+   procedure Disable_Stepper (Stepper : Stepper_Name) is
+   begin
+      Disable_Stepper_C (StepperToCInt (Stepper));
+   end Disable_Stepper;
+
+   procedure Shutdown is
+   begin
+      Shutdown_C;
+   end Shutdown;
+
+   package My_Controller is new
+     Prunt.Controller
+       (Generic_Types              => My_Controller_Generic_Types,
         Stepper_Hardware           =>
           (others =>
-            (Kind => Basic_Kind, Enable_Stepper => Enable_Stepper'Access, Disable_Stepper => Disable_Stepper'Access)),
+             (Kind            => Basic_Kind,
+              Enable_Stepper  => Enable_Stepper'Access,
+              Disable_Stepper => Disable_Stepper'Access)),
         Interpolation_Time         => 0.000_1 * s,
         Loop_Interpolation_Time    => 0.000_1 * s,
         Setup                      => Setup,
@@ -116,20 +145,20 @@ procedure Prunt_Simulator is
         Shutdown                   => Shutdown,
         Config_Path                => "./prunt_sim.json");
 
-    procedure Enqueue_Command (Command : Queued_Command) is
+   procedure Enqueue_Command (Command : Queued_Command) is
+   -- Should use double precision here for best numerical stability with high order derivatives
       X_Pos : constant Float := Float (Command.Pos (X_Axis) / mm);
       Y_Pos : constant Float := Float (Command.Pos (Y_Axis) / mm);
       Z_Pos : constant Float := Float (Command.Pos (Z_Axis) / mm);
       E_Pos : constant Float := Float (Command.Pos (E_Axis) / mm);
       Index : constant Integer := Integer (Command.Index);
       Safe  : constant Integer := (if Command.Safe_Stop_After then 1 else 0);
-    begin
+   begin
       Enqueue_Command_C (X_Pos, Y_Pos, Z_Pos, E_Pos, Index, Safe);
       My_Controller.Report_Last_Command_Executed (Command.Index);
-    end Enqueue_Command;
-
-
+   end Enqueue_Command;
 
 begin
-  My_Controller.Run;
+   Configure_C (0.000_1);
+   My_Controller.Run;
 end Prunt_Simulator;
