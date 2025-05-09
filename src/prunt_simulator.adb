@@ -21,16 +21,17 @@
 
 with Prunt;                   use Prunt;
 with Prunt.Controller;
-with System.Multiprocessors;
-with Ada.Text_IO;             use Ada.Text_IO;
+--  with System.Multiprocessors;
+--  with Ada.Text_IO;             use Ada.Text_IO;
 with Prunt.Controller_Generic_Types;
 with Prunt.TMC_Types.TMC2240; use Prunt.TMC_Types.TMC2240;
 with Prunt.TMC_Types;         use Prunt.TMC_Types;
 with Prunt.Heaters;
+--  with Interfaces.C;
 
 procedure Prunt_Simulator is
 
-   package Dimensionless_Text_IO is new Ada.Text_IO.Float_IO (Dimensionless);
+   --  package Dimensionless_Text_IO is new Ada.Text_IO.Float_IO (Dimensionless);
 
    type Stepper_Name is new Axis_Name;
 
@@ -38,7 +39,7 @@ procedure Prunt_Simulator is
 
    type Fan_Name is (Fan_1, Fan_2);
 
-   type Board_Temperature_Probe_Name is range 1 .. 0;
+   type Board_Temperature_Probe_Name is (Hotend, Bed);
 
    package My_Controller_Generic_Types is new
      Prunt.Controller_Generic_Types
@@ -90,7 +91,7 @@ procedure Prunt_Simulator is
       end case;
    end StepperToCInt;
 
-   -- Import the C function (not passed directly to Prunt)
+   --  Import the C function (not passed directly to Prunt)
    procedure Enable_Stepper_C (Stepper : Integer);
    pragma Import (C, Enable_Stepper_C, "enable_stepper");
 
@@ -98,7 +99,7 @@ procedure Prunt_Simulator is
    pragma Import (C, Disable_Stepper_C, "disable_stepper");
 
    procedure Enqueue_Command_C
-     (X, Y, Z, E : Float; Index : Integer; Safe_Stop : Integer);
+     (X, Y, Z, E : Long_Float; Index : Integer; Safe_Stop : Integer);
    pragma Import (C, Enqueue_Command_C, "enqueue_command");
 
    procedure Configure_C (Interpolation_Time : Float);
@@ -107,7 +108,7 @@ procedure Prunt_Simulator is
    procedure Shutdown_C;
    pragma Import (C, Shutdown_C, "shutdown");
 
-   -- Ada wrapper with the correct convention and type
+   --  Ada wrapper with the correct convention and type
    procedure Enable_Stepper (Stepper : Stepper_Name) is
    begin
       Enable_Stepper_C (StepperToCInt (Stepper));
@@ -127,10 +128,10 @@ procedure Prunt_Simulator is
      Prunt.Controller
        (Generic_Types              => My_Controller_Generic_Types,
         Stepper_Hardware           =>
-          (others =>
+          [others =>
              (Kind            => Basic_Kind,
               Enable_Stepper  => Enable_Stepper'Access,
-              Disable_Stepper => Disable_Stepper'Access)),
+              Disable_Stepper => Disable_Stepper'Access)],
         Interpolation_Time         => 0.000_1 * s,
         Loop_Interpolation_Time    => 0.000_1 * s,
         Setup                      => Setup,
@@ -146,13 +147,14 @@ procedure Prunt_Simulator is
         Config_Path                => "./prunt_sim.json");
 
    procedure Enqueue_Command (Command : Queued_Command) is
-   -- Should use double precision here for best numerical stability with high order derivatives
-      X_Pos : constant Float := Float (Command.Pos (X_Axis) / mm);
-      Y_Pos : constant Float := Float (Command.Pos (Y_Axis) / mm);
-      Z_Pos : constant Float := Float (Command.Pos (Z_Axis) / mm);
-      E_Pos : constant Float := Float (Command.Pos (E_Axis) / mm);
+      --  Should use double precision here for best numerical stability with high order derivatives
+      X_Pos : constant Long_Float := Long_Float (Command.Pos (X_Axis) / mm);
+      Y_Pos : constant Long_Float := Long_Float (Command.Pos (Y_Axis) / mm);
+      Z_Pos : constant Long_Float := Long_Float (Command.Pos (Z_Axis) / mm);
+      E_Pos : constant Long_Float := Long_Float (Command.Pos (E_Axis) / mm);
       Index : constant Integer := Integer (Command.Index);
       Safe  : constant Integer := (if Command.Safe_Stop_After then 1 else 0);
+
    begin
       Enqueue_Command_C (X_Pos, Y_Pos, Z_Pos, E_Pos, Index, Safe);
       My_Controller.Report_Last_Command_Executed (Command.Index);
