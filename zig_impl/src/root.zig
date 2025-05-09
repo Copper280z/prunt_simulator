@@ -10,6 +10,21 @@ const testing = std.testing;
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}).init;
 
+const AxisMoveCmd = struct {
+    pos: f32,
+    vel: f32,
+    acc: f32,
+    jerk: f32,
+    snap: f32,
+    crackle: f32,
+};
+const MoveCmd = struct {
+    X: AxisMoveCmd,
+    Y: AxisMoveCmd,
+    Z: AxisMoveCmd,
+    E: AxisMoveCmd,
+};
+
 const Server = struct {
     run_thread: bool = false,
     pub fn run(self: *@This()) void {
@@ -40,7 +55,7 @@ pub export fn disable_stepper(axis: i32) callconv(.C) void {
     std.log.info("Disabling axis: {}", .{axis});
 }
 
-pub export fn enqueue_command(x: f32, y: f32, z: f32, e: f32, index: i32, safe_stop: i32) callconv(.C) void {
+pub export fn enqueue_command(x: f64, y: f64, z: f64, e: f64, index: i32, safe_stop: i32) callconv(.C) void {
     _ = index;
     std.log.warn("Move cmd: X={} Y={} Z={}, E={}", .{ x, y, z, e });
     if (safe_stop != 0) {
