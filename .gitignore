@@ -8,3 +8,4 @@
 *.o
 *.a
 /uploads/*
+*.json_backup*

@@ -6,6 +6,7 @@ const testing = std.testing;
 const types = @import("types.zig");
 const plt = @import("plot.zig");
 const diff = @import("diff.zig");
+const libusb = @import("libusb");
 
 const AxisMoveCmd = types.AxisMoveCmd;
 const MoveCmd = types.MoveCmd;
@@ -59,7 +60,39 @@ const Server = struct {
 
 var server: *Server = undefined;
 
+fn list_usb_devs() void {
+    std.log.info("Enumerating usb devices", .{});
+    var ctx: ?*libusb.libusb_context = undefined;
+    const r = libusb.libusb_init(&ctx);
+    if (r < 0) {
+        std.log.err("Initialization error {}\n", .{r});
+        return;
+    }
+
+    var devs: [*c]*libusb.libusb_device = undefined;
+    const dev_count = libusb.libusb_get_device_list(ctx, &devs);
+    if (dev_count < 0) {
+        std.log.err("Error in get device list\n", .{});
+        libusb.libusb_exit(ctx);
+        return;
+    }
+    std.log.info("{} Devices found", .{dev_count});
+    for (0..@intCast(dev_count)) |i| {
+        var desc: libusb.libusb_device_descriptor = undefined;
+
+        const devs_ptr = devs[i];
+        const err = libusb.libusb_get_device_descriptor(devs_ptr, &desc);
+        if (err == 0) {
+            std.log.info("Device {}: Vendor=0x{x}, Product=0x{x}", .{ i, desc.idVendor, desc.idProduct });
+        }
+    }
+    libusb.libusb_free_device_list(@ptrCast(devs), 1);
+    libusb.libusb_exit(ctx);
+}
+
 fn run_server(Ts: f32, allocator: std.mem.Allocator) void {
+    list_usb_devs();
+
     std.debug.print("Starting server\n", .{});
     server = Server.init(allocator) catch {
         std.log.err("Failed to allocate Server", .{});

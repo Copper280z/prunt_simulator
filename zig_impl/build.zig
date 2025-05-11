@@ -61,9 +61,21 @@ pub fn build(b: *std.Build) void {
 
     // Deps for zzplot
 
+    const libusb_dep = b.dependency("libusb", .{});
+    const libusb = libusb_dep.builder.addTranslateC(.{
+        .target = target,
+        .optimize = optimize,
+        .root_source_file = .{
+            .dependency = .{ .dependency = libusb_dep, .sub_path = "libusb/libusb.h" },
+        },
+    });
+    const libusb_mod = libusb.addModule("libusb");
+    lib.root_module.addImport("libusb", libusb_mod);
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).
+    b.installArtifact(libusb_dep.artifact("usb"));
     b.installArtifact(lib);
 
     // Creates a step for unit testing. This only builds the test executable
