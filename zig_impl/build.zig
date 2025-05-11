@@ -41,6 +41,26 @@ pub fn build(b: *std.Build) void {
     lib.bundle_ubsan_rt = true;
     lib.linkLibC();
 
+    // Deps for zzplot
+    const zzplot_dep = b.dependency("zzplot", .{});
+    const nanovg_dep = b.dependency("nanovg", .{ .target = target, .optimize = optimize });
+
+    const zzplot = zzplot_dep.module("ZZPlot");
+    lib.root_module.addImport("zzplot", zzplot);
+    for (zzplot.include_dirs.items) |dir| {
+        lib.addIncludePath(dir.path);
+    }
+
+    lib.addCSourceFile(.{ .file = nanovg_dep.path("lib/gl2/src/glad.c"), .flags = &.{} });
+    // exe.addCSourceFile(.{ .file = nanovg_dep.path("src/fontstash.c"), .flags = &.{ "-DFONS_NO_STDIO", "-fno-stack-protector" } });
+
+    lib.addIncludePath(nanovg_dep.path("lib/gl2/include"));
+    lib.linkSystemLibrary("glfw");
+    lib.linkSystemLibrary("GL");
+    lib.linkSystemLibrary("X11");
+
+    // Deps for zzplot
+
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
     // running `zig build`).

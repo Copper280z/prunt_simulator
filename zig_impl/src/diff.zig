@@ -1,6 +1,6 @@
 const std = @import("std");
 
-fn BinomialDerivator(order: u8) type {
+pub fn BinomialDerivator(order: u8) type {
     const verbose = false;
     if (order % 2 == 1) {
         @compileError("Odd derivatiive orders not currently supported");

@@ -9,7 +9,7 @@ project Prunt_Simulator is
    for Languages use ("Ada", "C");
 
    package Linker is 
-     for Default_Switches ("Ada") use ("-Lzig_impl/zig-out/lib", "-lcallbacks");
+     for Default_Switches ("Ada") use ("-Lzig_impl/zig-out/lib", "-lcallbacks", "-lglfw");
    end Linker;
    
    -- package Linker is 
