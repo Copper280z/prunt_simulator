@@ -43,16 +43,34 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
     const t: []f32 = allocator.alloc(f32, n_pts) catch {
         return;
     };
+    const x: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
+    const y: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
     const vx: []f32 = allocator.alloc(f32, n_pts) catch {
         return;
     };
     const vy: []f32 = allocator.alloc(f32, n_pts) catch {
         return;
     };
-    const x: []f32 = allocator.alloc(f32, n_pts) catch {
+    const ax: []f32 = allocator.alloc(f32, n_pts) catch {
         return;
     };
-    const y: []f32 = allocator.alloc(f32, n_pts) catch {
+    const ay: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
+    const jx: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
+    const jy: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
+    const sx: []f32 = allocator.alloc(f32, n_pts) catch {
+        return;
+    };
+    const sy: []f32 = allocator.alloc(f32, n_pts) catch {
         return;
     };
     std.log.warn("Plotting {} data points", .{move_data.len});
@@ -63,6 +81,12 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
         y[i] = move.Y.pos;
         vx[i] = move.X.vel;
         vy[i] = move.Y.vel;
+        ax[i] = move.X.acc;
+        ay[i] = move.Y.acc;
+        jx[i] = move.X.jerk;
+        jy[i] = move.Y.jerk;
+        sx[i] = move.X.snap;
+        sy[i] = move.Y.snap;
     }
     // try genTestSignals(t, vx, vy, x, y);
 
@@ -94,8 +118,8 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
     };
 
     var ax1 = Axes.init(fig, .{
-        .ypos = 0.4,
-        .ht = 0.6,
+        .ypos = 0.8,
+        .ht = 0.2,
         .title_str = "Position",
         .xlabel_str = "time (s)",
         .ylabel_str = "mm",
@@ -105,20 +129,43 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
     };
 
     var ax2 = Axes.init(fig, .{
-        .ht = 0.4,
+        .ypos = 0.6,
+        .ht = 0.2,
         .title_str = "Velocity",
         .xlabel_str = "time (s)",
         .ylabel_str = "mm/s",
+        .draw_grid = true,
     }) catch {
         return;
     };
-
-    // u and v will be plotted on the first axes
-    var plt_vx = Plot.init(ax2, .{ .line_col = Color.opacity(Color.blue, 0.5), .line_width = 8 }) catch {
+    var ax3 = Axes.init(fig, .{
+        .ypos = 0.4,
+        .ht = 0.2,
+        .title_str = "Acceleration",
+        .xlabel_str = "time (s)",
+        .ylabel_str = "mm/s^2",
+        .draw_grid = true,
+    }) catch {
         return;
     };
-
-    var plt_vy = Plot.init(ax2, .{ .line_col = Color.opacity(Color.orange, 0.7), .line_width = 8 }) catch {
+    var ax4 = Axes.init(fig, .{
+        .ypos = 0.2,
+        .ht = 0.2,
+        .title_str = "Jerk",
+        .xlabel_str = "time (s)",
+        .ylabel_str = "mm/s^3",
+        .draw_grid = true,
+    }) catch {
+        return;
+    };
+    var ax5 = Axes.init(fig, .{
+        .ypos = 0.0,
+        .ht = 0.2,
+        .title_str = "Snap",
+        .xlabel_str = "time (s)",
+        .ylabel_str = "mm/s^4",
+        .draw_grid = true,
+    }) catch {
         return;
     };
 
@@ -130,14 +177,46 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
     var plt_y = Plot.init(ax1, .{ .line_col = Color.opacity(Color.purple, 0.7), .line_width = 8 }) catch {
         return;
     };
+    var plt_vx = Plot.init(ax2, .{ .line_col = Color.opacity(Color.blue, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+
+    var plt_vy = Plot.init(ax2, .{ .line_col = Color.opacity(Color.orange, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+    var plt_ax = Plot.init(ax3, .{ .line_col = Color.opacity(Color.blue, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+
+    var plt_ay = Plot.init(ax3, .{ .line_col = Color.opacity(Color.orange, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+    var plt_jx = Plot.init(ax4, .{ .line_col = Color.opacity(Color.blue, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+
+    var plt_jy = Plot.init(ax4, .{ .line_col = Color.opacity(Color.orange, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+    var plt_sx = Plot.init(ax5, .{ .line_col = Color.opacity(Color.blue, 0.7), .line_width = 8 }) catch {
+        return;
+    };
+
+    var plt_sy = Plot.init(ax5, .{ .line_col = Color.opacity(Color.orange, 0.7), .line_width = 8 }) catch {
+        return;
+    };
 
     // we can set axis limits based on values of data using set_limits
     // minMax will find min and max values over an arbitrary number of slices
-    ax2.set_limits(minMax(f32, .{t}), minMax(f32, .{ vx, vy }), .{});
 
     // the final argument of set_limits allows use of custom tick computation methods
     // here, setting m_targets allows denser ticks
     ax1.set_limits(minMax(f32, .{t}), minMax(f32, .{ x, y }), .{ .m_target = 18 });
+
+    ax2.set_limits(minMax(f32, .{t}), minMax(f32, .{ vx, vy }), .{});
+    ax3.set_limits(minMax(f32, .{t}), minMax(f32, .{ ax, ay }), .{});
+    ax4.set_limits(minMax(f32, .{t}), minMax(f32, .{ jx, jy }), .{});
+    ax5.set_limits(minMax(f32, .{t}), minMax(f32, .{ sx, sy }), .{});
 
     while (fig.live and 0 == c.glfwWindowShouldClose(@ptrCast(fig.window))) {
         fig.begin();
@@ -149,6 +228,18 @@ fn run_plot(move_data: []MoveCmd, Ts: f32, _allocator: std.mem.Allocator) void {
         ax2.draw();
         plt_vx.plot(t, vx);
         plt_vy.plot(t, vy);
+
+        ax3.draw();
+        plt_ax.plot(t, ax);
+        plt_ay.plot(t, ay);
+
+        ax4.draw();
+        plt_jx.plot(t, jx);
+        plt_jy.plot(t, jy);
+
+        ax5.draw();
+        plt_sx.plot(t, sx);
+        plt_sy.plot(t, sy);
 
         fig.end();
     }
